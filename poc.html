@@ -12,22 +12,44 @@
 </head>
 <body>
     <script>
+        // let geocodes;
+        // fetch("data/geocodes.json").then(resp => resp.json()).then(json => geocodes = json);
+        let initialPurposeCut = "All purposes of travel";
+        let initialLengthCut = "All lengths of stay";
+
         let mapChart = am4core.create("map", am4maps.MapChart);
         mapChart.geodata = am4geodata_worldLow;
         mapChart.projection = new am4maps.projections.EqualEarth();
         mapChart.deltaLongitude = -160;
+        mapChart.panBehavior = "none";
 
         let polygons = mapChart.series.push(new am4maps.MapPolygonSeries());
         polygons.useGeodata = true;
         polygons.exclude = ["AQ"];
 
-        mapChart.dataSource.url = "data/allData.json";
-        mapChart.dataSource.parser = new am4core.JSONParser();
-        mapChart.dataSource.parser.options.emptyAs = 0;
-        mapChart.dataSource.events.on("parseended", ev => {
+        let nodes = mapChart.series.push(new am4maps.MapImageSeries());
+        let nodeTemplate = nodes.mapImages.template;
+        nodeTemplate.propertyFields.latitude = "Latitude";
+        nodeTemplate.propertyFields.longitude = "Longitude";
+        nodeTemplate.propertyFields.title = "Name";
+        let circle = nodeTemplate.createChild(am4core.Circle);
+        circle.radius = 1;
+        circle.fill = am4core.color("#000000");
+        circle.tooltipText = "{title}";
+        nodes.dataSource.url = "data/geocodes.json";
+        nodes.dataSource.parser = new am4core.JSONParser();
+        nodes.dataSource.parser.options.emptyAs = 0;
 
-            ev.target.data = ev.target.data[1].data;
-        });
+        // let edges = mapChart.series.push(new am4maps.MapLineSeries());
+        // edges.dataSource.url = "data/allData.json";
+        // edges.dataSource.parser = new am4core.JSONParser();
+        // edges.dataSource.parser.options.emptyAs = 0;
+        // edges.dataSource.events.on("parseended", ev => {
+        //     let rootData = ev.target.data;
+        //     let cutData = rootData[initialPurposeCut][initialLengthCut];
+        //     let latestData = cutData[cutData.length-1].data;
+        //     ev.target.data = [];
+        // });
     </script>
     <div id="map" style="width: 100%; height: 800px;"></div>
 </body>

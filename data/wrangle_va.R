@@ -56,7 +56,7 @@ va_raw <- read_csv(paste0("data/VisitorArrivals ", va_last_modified, ".csv"),
                                           Travel_purpose = "f",
                                           Count = "i"))
 va_raw <- va_raw %>%
-  rbind(read_csv("data/VisitorArrivals2019.csv",
+  rbind(read_csv("data/VisitorArrivals 2019.csv",
                  col_types = cols_only(Week_ended = "D",
                                        Country_of_residence = "f",
                                        NZ_port = "f",
@@ -69,6 +69,7 @@ va_raw <- va_raw %>%
 
 # 3. Wrangle visitor arrival (VA) data ======================================
 va <- va_raw %>%
+  as.data.frame() %>% 
   filter(Country_of_residence != "Total") %>% 
   mutate(Country_of_residence = factor(Country_of_residence) %>% 
            # Drop continental data
@@ -109,8 +110,7 @@ va_nested <- va %>%
   group_by(Purpose, Length, TimePeriod, From, To) %>% 
   summarise(Value = sum(Value)) %>%
   group_by(Purpose, Length, TimePeriod) %>% 
-  nest() %>% 
-  pivot_wider(names_from = "TimePeriod", values_from = "data") %>% 
+  nest() %>%
   group_by(Purpose, Length) %>% 
   nest()  %>% 
   pivot_wider(names_from = "Length", values_from = "data") %>% 
@@ -120,7 +120,17 @@ va_nested <- va %>%
 
 save(va_nested, file="data/va_nested.Rda")
 
-va_nested %>% 
-  jsonlite::toJSON() %>%
+out <- va_nested %>%
+  jsonlite::toJSON() %>% 
   toString() %>%
+  str_replace_all('\\[\\{\\"(?!(From)|Time)', '{"') %>%
+  str_replace_all('\\}\\]\\}\\]\\}\\]\\}\\]', "}]}]}}") %>% 
+  str_replace_all('\\}\\]\\}\\]\\}\\]', "}]}]}") %>%
+  # str_replace_all('\\}\\]\\}\\]', "}]}") %>%
+  str_replace_all('\\{\\}\\}\\]\\}\\]', "{}}]}")
+
+stopifnot(validate(out))
+
+out %>% 
   write_utf8("data/allData.json")
+
