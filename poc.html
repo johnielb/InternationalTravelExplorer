@@ -21,7 +21,7 @@
         polygons.useGeodata = true;
         polygons.exclude = ["AQ"];
 
-        mapChart.dataSource.url = "data/visitorArrivalsAll.json";
+        mapChart.dataSource.url = "data/allData.json";
         mapChart.dataSource.parser = new am4core.JSONParser();
         mapChart.dataSource.parser.options.emptyAs = 0;
         mapChart.dataSource.events.on("parseended", ev => {

@@ -123,4 +123,4 @@ save(va_nested, file="data/va_nested.Rda")
 va_nested %>% 
   jsonlite::toJSON() %>%
   toString() %>%
-  write_utf8("visitorArrivalsAll.json")
+  write_utf8("data/allData.json")
