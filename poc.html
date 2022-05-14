@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Map Proof of Concept</title>
+    <!-- Load required JS files for amCharts to run -->
+    <script src="https://www.amcharts.com/lib/4/core.js"></script>
+    <script src="https://www.amcharts.com/lib/4/charts.js"></script>
+    <script src="https://www.amcharts.com/lib/4/maps.js"></script>
+    <script src="https://www.amcharts.com/lib/4/geodata/worldLow.js"></script>
+    <script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+</head>
+<body>
+    <script>
+        let mapChart = am4core.create("map", am4maps.MapChart);
+        mapChart.geodata = am4geodata_worldLow;
+        mapChart.projection = new am4maps.projections.EqualEarth();
+        mapChart.deltaLongitude = -160;
+
+        let polygons = mapChart.series.push(new am4maps.MapPolygonSeries());
+        polygons.useGeodata = true;
+        polygons.exclude = ["AQ"];
+
+        mapChart.dataSource.url = "data/visitorArrivalsAll.json";
+        mapChart.dataSource.parser = new am4core.JSONParser();
+        mapChart.dataSource.parser.options.emptyAs = 0;
+        mapChart.dataSource.events.on("parseended", ev => {
+
+            ev.target.data = ev.target.data[1].data;
+        });
+    </script>
+    <div id="map" style="width: 100%; height: 800px;"></div>
+</body>
+</html>
