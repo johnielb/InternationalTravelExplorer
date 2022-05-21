@@ -12,44 +12,189 @@
 </head>
 <body>
     <script>
-        // let geocodes;
-        // fetch("data/geocodes.json").then(resp => resp.json()).then(json => geocodes = json);
         let initialPurposeCut = "All purposes of travel";
         let initialLengthCut = "All lengths of stay";
+        let initialDestination = "New Zealand";
+        let colorSet = new am4core.ColorSet();
 
+        // 1. Create root map chart, centred on NZ ------------------------------------
         let mapChart = am4core.create("map", am4maps.MapChart);
         mapChart.geodata = am4geodata_worldLow;
         mapChart.projection = new am4maps.projections.EqualEarth();
         mapChart.deltaLongitude = -160;
         mapChart.panBehavior = "none";
 
+        // 2. Create country polygons from geodata without Antarctica  ------------------------------------
         let polygons = mapChart.series.push(new am4maps.MapPolygonSeries());
         polygons.useGeodata = true;
         polygons.exclude = ["AQ"];
 
+        // 3. Create edge templates, and point to data source ------------------------------------
+        let edges = mapChart.series.push(new am4maps.MapArcSeries());
+        edges.mapLines.template.line.controlPointDistance = 0.1;
+        edges.mapLines.template.line.controlPointPosition = 0.5;
+        edges.mapLines.template.line.strokeWidth = 3;
+        edges.mapLines.template.line.stroke = "#777";
+        edges.dataSource.url = "data/allData.json";
+        edges.dataSource.parser = new am4core.JSONParser();
+        edges.dataSource.parser.options.emptyAs = 0;
+
+        // 4. Create node templates, and point to geodata source ------------------------------------
         let nodes = mapChart.series.push(new am4maps.MapImageSeries());
+        nodes.dataSource.url = "data/geocodes.json";
+        nodes.dataSource.parser = new am4core.JSONParser();
+        nodes.dataSource.parser.options.emptyAs = 0;
+        // 5. Initiate chart loading when geodata loaded ------------------------------------
+        nodes.dataSource.events.on("done", ev => {
+            ev.target.data.forEach(node => {
+                node.Color = colorSet.next();
+            });
+
+            // 6. Load edges ------------------------------------
+            edges.dataSource.load();
+            edges.dataSource.events.on("done", ev => {
+                let cutData = ev.target.data[initialPurposeCut][initialLengthCut];
+                let latestData = cutData[cutData.length-1].data;
+                let destData = latestData.filter(conn => conn.To === initialDestination);
+                let total = destData.reduce((a, b) => a + b.Value, 0);
+                destData.forEach(conn => {
+                    let edge = edges.mapLines.create();
+                    let origin = nodes.mapImages.values.filter(x => x.title === conn.From)[0];
+                    origin.children.each(circle => {
+                        circle.radius = 50 * Math.log(conn.Value / total + 1.1);
+                    });
+                    let dest = nodes.mapImages.values.filter(x => x.title === conn.To)[0];
+                    edge.imagesToConnect = [origin, dest];
+                });
+            });
+        });
+
+        // 7. Set up how nodes appear, animated! ------------------------------------
         let nodeTemplate = nodes.mapImages.template;
         nodeTemplate.propertyFields.latitude = "Latitude";
         nodeTemplate.propertyFields.longitude = "Longitude";
         nodeTemplate.propertyFields.title = "Name";
+        nodeTemplate.tooltipText = "{title}";
+        let staticCircle = nodeTemplate.createChild(am4core.Circle);
+        staticCircle.radius = 5;
+        staticCircle.propertyFields.fill = "Color";
+        staticCircle.nonScaling = true;
         let circle = nodeTemplate.createChild(am4core.Circle);
-        circle.radius = 1;
-        circle.fill = am4core.color("#000000");
-        circle.tooltipText = "{title}";
-        nodes.dataSource.url = "data/geocodes.json";
-        nodes.dataSource.parser = new am4core.JSONParser();
-        nodes.dataSource.parser.options.emptyAs = 0;
+        circle.radius = 5;
+        circle.propertyFields.fill = "Color";
+        circle.events.on("inited", ev => animateBullet(ev.target));
+        let animateBullet = bullet => {
+            let animation = bullet.animate([
+                {
+                    property: "scale",
+                    from: 1 / mapChart.zoomLevel,
+                    to: 3 / mapChart.zoomLevel
+                }, {
+                    property: "opacity",
+                    from: 1,
+                    to: 0
+                }
+            ], 1500, am4core.ease.circleOut);
+            animation.events.on("animationended", ev => animateBullet(ev.target.object));
+        };
 
-        // let edges = mapChart.series.push(new am4maps.MapLineSeries());
-        // edges.dataSource.url = "data/allData.json";
-        // edges.dataSource.parser = new am4core.JSONParser();
-        // edges.dataSource.parser.options.emptyAs = 0;
-        // edges.dataSource.events.on("parseended", ev => {
-        //     let rootData = ev.target.data;
-        //     let cutData = rootData[initialPurposeCut][initialLengthCut];
-        //     let latestData = cutData[cutData.length-1].data;
-        //     ev.target.data = [];
-        // });
+        // 8. Set up slider ------------------------------------
+
+        // Create container for week slider, play button and label
+        let bottomContainer = mapChart.createChild(am4core.Container);
+        bottomContainer.layout = "horizontal";
+        bottomContainer.align = "center";
+        bottomContainer.valign = "bottom";
+        bottomContainer.width = am4core.percent(90);
+
+        // Add play button for slider
+        let playButton = bottomContainer.createChild(am4core.PlayButton);
+        playButton.valign = "middle";
+        playButton.events.on("toggled", function (event) {
+            if (event.target.isActive) {
+                if (vaChartSlider) {
+                    if (vaChartSlider.start >= 1) {
+                        vaChartSlider.start = 0;
+                        sliderAnimation.start();
+                    }
+                    sliderAnimation.setProgress(vaChartSlider.start);
+                    sliderAnimation.resume();
+                    playButton.isActive = true;
+                }
+            } else {
+                sliderAnimation.pause();
+                playButton.isActive = false;
+            }
+        });
+
+        // Create container for week slider and its min/max labels below it
+        let weekSliderContainer = bottomContainer.createChild(am4core.Container);
+        weekSliderContainer.layout = "vertical";
+        weekSliderContainer.valign = "middle";
+        weekSliderContainer.width = am4core.percent(100);
+        weekSliderContainer.marginLeft = 20;
+
+        // Update chart data in place
+        function updateVAWeek(value) {
+            let week = startWeek + Math.round(value * sliderRange);
+            if (currentSlider !== week) {
+                currentSlider = week;
+
+            }
+        }
+        // Add week slider
+        let startWeek = 1;
+        let endWeek = 52;
+        let sliderRange = endWeek-startWeek;
+        let currentSlider = 14;
+        vaChartSlider = weekSliderContainer.createChild(am4core.Slider);
+        // Update data when slider changes
+        vaChartSlider.events.on("rangechanged", function () {
+            updateVAWeek(vaChartSlider.start);
+        });
+        vaChartSlider.orientation = "horizontal";
+        vaChartSlider.width = am4core.percent(100);
+        vaChartSlider.valign = "middle";
+        vaChartSlider.startGrip.events.on("drag", stop);
+
+        // Create animation that plays when the play button is toggled
+        let sliderAnimation = vaChartSlider.animate({
+            property: "start",
+            from: 0,
+            to: 1
+        }, sliderRange * 1250, am4core.ease.linear).pause();
+        sliderAnimation.setProgress((currentSlider-startWeek)/sliderRange);
+        sliderAnimation.events.on("animationended", function () {
+            playButton.isActive = false;
+        })
+
+        // Define data
+        vaChart.data = deepCloneObject(vaChartData[initialCut][currentSlider-1]).reverse();
+
+        // Add container for week min/max labels
+        let weekSliderLabels = weekSliderContainer.createChild(am4core.Container);
+        weekSliderLabels.width = am4core.percent(100);
+
+        let startWeekLabel = weekSliderLabels.createChild(am4core.Label);
+        startWeekLabel.valign = "middle";
+        startWeekLabel.align = "left";
+        startWeekLabel.fontSize = 12;
+        startWeekLabel.text = "Week " + startWeek;
+
+        let endWeekLabel = weekSliderLabels.createChild(am4core.Label);
+        endWeekLabel.valign = "middle";
+        endWeekLabel.align = "right";
+        endWeekLabel.fontSize = 12;
+        endWeekLabel.text = "Week " + endWeek;
+
+        // Add week label to the right
+        let weekLabel = bottomContainer.createChild(am4core.Label);
+        weekLabel.valign = "middle";
+        weekLabel.fill = am4core.color("#444444");
+        weekLabel.fontSize = 16;
+        weekLabel.marginLeft = 15;
+        let latestTimePeriod = vaChart.data[0]["_TimePeriod"];
+        weekLabel.text = "Week " + currentSlider + " (" + latestTimePeriod + ")";
     </script>
     <div id="map" style="width: 100%; height: 800px;"></div>
 </body>
