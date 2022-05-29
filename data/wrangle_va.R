@@ -1,7 +1,6 @@
 # WRANGLE VISITOR ARRIVAL DATA
 # Author: Johniel Bocacao
-# Wrangle provisional visitor arrival comma-separated data from StatsNZ into JSON. 
-# Establishes a 
+# Wrangle provisional visitor arrival comma-separated data from StatsNZ into JSON.
 
 # 1. Set up environment =================================
 library(dplyr)
