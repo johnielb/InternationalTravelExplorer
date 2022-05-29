@@ -55,7 +55,7 @@ va_raw <- read_csv(paste0("data/VisitorArrivals ", va_last_modified, ".csv"),
                                           Travel_purpose = "f",
                                           Count = "i"))
 va_raw <- va_raw %>%
-  rbind(read_csv("data/VisitorArrivals 2019.csv",
+  rbind(read_csv("VisitorArrivals 2019.csv",
                  col_types = cols_only(Week_ended = "D",
                                        Country_of_residence = "f",
                                        NZ_port = "f",
@@ -112,12 +112,12 @@ va_nested <- va %>%
   nest() %>%
   group_by(Purpose, Length) %>% 
   nest()  %>% 
-  pivot_wider(names_from = "Length", values_from = "data") %>% 
+  pivot_wider(names_from = "Length", values_from = "") %>%
   group_by(Purpose) %>% 
   nest()  %>% 
-  pivot_wider(names_from = "Purpose", values_from = "data")
+  pivot_wider(names_from = "Purpose", values_from = "")
 
-save(va_nested, file="data/va_nested.Rda")
+save(va_nested, file= "va_nested.Rda")
 
 out <- va_nested %>%
   jsonlite::toJSON() %>% 
@@ -131,5 +131,5 @@ out <- va_nested %>%
 stopifnot(validate(out))
 
 out %>% 
-  write_utf8("data/allData.json")
+  write_utf8("allData.json")
 

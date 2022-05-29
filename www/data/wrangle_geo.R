@@ -2,7 +2,7 @@ library(httr)
 library(dplyr)
 library(stringr)
 
-if (!exists("va_nested")) load("data/va_nested.Rda")
+if (!exists("va_nested")) load("va_nested.Rda")
 df <- va_nested[[1]][[1]][[1]][[1]][[2]][[1]]
 countries <- df$From %>% levels() %>% magrittr::extract(. != "Other")
 ports <- df$To %>% levels() %>% magrittr::extract(. != "Other")
@@ -22,4 +22,4 @@ geo %>%
   mutate(Latitude = as.numeric(Latitude), Longitude = as.numeric(Longitude)) %>% 
   jsonlite::toJSON(pretty = F) %>%
   toString() %>%
-  write_utf8("data/geocodes.json")
+  write_utf8("geocodes.json")

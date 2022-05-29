@@ -1,0 +1,6 @@
+.container-fluid {
+    height: 100%
+}
+.mapRow, #map {
+    height: 60vh;
+}
