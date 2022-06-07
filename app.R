@@ -52,7 +52,9 @@ ui <- fluidPage(
         column(12, tags$div(id = "map"))
       ),
       fluidRow(
-        tableOutput("nodes")
+        column(4, tags$div(id = "countryChart")),
+        column(4, tags$div(id = "purposeChart")),
+        column(4, tags$div(id = "lengthChart"))
       )
     )
   )
@@ -84,34 +86,13 @@ server <- function(input, output, session) {
   })
 
   filteredVAData <- reactive({
-    week_ended <- interpolateWeek()
-
     va %>%
-      filter(Length_of_stay == input$lengths, Travel_purpose == input$purposes, Week_ended == week_ended) %>%
+      filter(Length_of_stay == input$lengths, Travel_purpose == input$purposes) %>%
       return()
   })
 
-  nodeData <- reactive({
-    df <- filteredVAData()
-    df %>%
-      select(Name = Country_of_residence, Count) %>%
-      group_by(Name) %>%
-      summarise(Count = sum(Count)) %>%
-      mutate(Type = "From") %>%
-      rows_insert(
-        df %>%
-          select(Name = NZ_port, Count) %>%
-          group_by(Name) %>%
-          summarise(Count = sum(Count)) %>%
-          mutate(Type = "To")
-      ) %>%
-      inner_join(geo, by = "Name") %>%
-      mutate(TimePeriod = df$Week_ended[1]) %>%
-      toJSON() %>%
-      return()
-  })
-
-  edgeData <- reactive({
+  updateData <- reactive({
+    week_ended <- interpolateWeek()
     nz_port <- input$port
     if (is.null(input$port)) {
       nz_port <- "New Zealand"
@@ -119,22 +100,44 @@ server <- function(input, output, session) {
 
     df <- filteredVAData()
     df %>%
-      filter(NZ_port == nz_port) %>%
+      filter(NZ_port == nz_port, Week_ended == week_ended) %>% 
       select(From = Country_of_residence, To = NZ_port, Count) %>%
-      # group_by(From, To) %>%
-      # summarise(Count = sum(Count)) %>%
+      group_by(From, To) %>%
+      summarise(Count = sum(Count)) %>%
+      left_join(geo, by = c("From" = "Name")) %>%
+      rbind(
+        df %>%
+          select(To = NZ_port, Count) %>%
+          group_by(To) %>%
+          summarise(Count = sum(Count)) %>% 
+          left_join(geo, by = c("To" = "Name"))
+      ) %>%
+      mutate(TimePeriod = week_ended) %>%
       toJSON() %>%
+      return()
+  })
+  
+  updateScrollbarSeries <- reactive({
+    nz_port <- input$port
+    if (is.null(input$port)) {
+      nz_port <- "New Zealand"
+    }
+    
+    df <- filteredVAData()
+    df %>%
+      filter(NZ_port == nz_port) %>%
+      select(TimePeriod = Week_ended, Count) %>%
+      group_by(TimePeriod) %>% 
+      summarise(Count = sum(Count)) %>%
+      toJSON() %>% 
       return()
   })
 
   observe({
     session$sendCustomMessage("slider-range", sliderRange())
-    session$sendCustomMessage("node-data", nodeData())
-    session$sendCustomMessage("edge-data", edgeData())
+    session$sendCustomMessage("data", updateData())
+    session$sendCustomMessage("scrollbar", updateScrollbarSeries())
   })
-
-  # observeEvent(input$purposes, updateData)
-  # observeEvent(input$length, updateData)
 }
 
 shinyApp(ui, server)
