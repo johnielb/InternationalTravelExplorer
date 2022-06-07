@@ -110,7 +110,6 @@ $(document).on("shiny:connected", () => {
             // Need this before the edges are constructed
             nodes.validateData();
             nodes.validate();
-            debugger;
             weekLabel.text = nodes.data[0].TimePeriod;
 
             edges.mapLines.clear();
@@ -210,7 +209,6 @@ $(document).on("shiny:connected", () => {
         slider.series.push(totalSeries);
         Shiny.addCustomMessageHandler('scrollbar', (data) => {
           totalChart.data = data;
-          debugger;
         });
 
         // Add container for week min/max labels

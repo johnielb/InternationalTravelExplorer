@@ -45,9 +45,7 @@ sum_and_complete_category <- function(df) {
 # }
 
 # 2. Load in visitor arrival (VA) data ======================================
-va_last_modified <- "15May2022"
-va_last_modified_date <- as.Date(va_last_modified, format="%d%b%Y")
-va_raw <- read_csv(paste0("data/VisitorArrivals ", va_last_modified, ".csv"),
+va_raw <- read_csv(paste0("data/VisitorArrivals.csv"),
                     col_types = cols_only(Week_ended = col_date(format="%Y-%m-%d"),
                                           Country_of_residence = "f",
                                           NZ_port = "f",
