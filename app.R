@@ -17,10 +17,10 @@ ui <- fluidPage(
     tags$link(rel = "stylesheet", type = "text/css", href = "main.css")
   ),
   tags$script(src = "map.js"),
-  titlePanel("International Travel Explorer"),
   fillPage(
     sidebarPanel(
       width = 3,
+      h1("International Travel Data Explorer"),
       radioButtons(
         "purposes",
         "Filter by purpose of travel",
@@ -48,11 +48,12 @@ ui <- fluidPage(
     mainPanel(
       width = 9,
       fluidRow(
-        class = "mapRow",
+        id = "mapRow",
         column(12, tags$div(id = "map"))
       ),
       fluidRow(
-        column(4, tags$div(id = "countryChart")),
+        id = "chartRow",
+        column(4, tags$div(id = "nodeChart")),
         column(4, tags$div(id = "purposeChart")),
         column(4, tags$div(id = "lengthChart"))
       )
@@ -76,7 +77,7 @@ server <- function(input, output, session) {
     return(length(range) - 1)
   })
   # Get the week-ended time period from the input week index
-  interpolateWeek <- reactive({
+  getWeek <- reactive({
     index <- input$week_ended
     if (is.null(input$week_ended)) {
       index <- sliderRange()+1
@@ -92,7 +93,7 @@ server <- function(input, output, session) {
   })
 
   updateData <- reactive({
-    week_ended <- interpolateWeek()
+    week_ended <- getWeek()
     nz_port <- input$port
     if (is.null(input$port)) {
       nz_port <- "New Zealand"
@@ -100,43 +101,102 @@ server <- function(input, output, session) {
 
     df <- filteredVAData()
     df %>%
-      filter(NZ_port == nz_port, Week_ended == week_ended) %>% 
+      filter(NZ_port == nz_port, Week_ended == week_ended) %>%
       select(From = Country_of_residence, To = NZ_port, Count) %>%
       group_by(From, To) %>%
       summarise(Count = sum(Count)) %>%
       left_join(geo, by = c("From" = "Name")) %>%
       rbind(
         df %>%
+          filter(Week_ended == week_ended) %>% 
           select(To = NZ_port, Count) %>%
           group_by(To) %>%
-          summarise(Count = sum(Count)) %>% 
+          summarise(Count = sum(Count)) %>%
           left_join(geo, by = c("To" = "Name"))
       ) %>%
       mutate(TimePeriod = week_ended) %>%
       toJSON() %>%
       return()
   })
-  
+
   updateScrollbarSeries <- reactive({
     nz_port <- input$port
     if (is.null(input$port)) {
       nz_port <- "New Zealand"
     }
-    
+
     df <- filteredVAData()
     df %>%
       filter(NZ_port == nz_port) %>%
       select(TimePeriod = Week_ended, Count) %>%
-      group_by(TimePeriod) %>% 
+      group_by(TimePeriod) %>%
       summarise(Count = sum(Count)) %>%
+      toJSON() %>%
+      return()
+  })
+  
+  selectOneDimension <- function(df, category) {
+    df %>% 
+      select(TimePeriod = Week_ended,
+             Category = category,
+             Value = Count) %>%
+      group_by(TimePeriod, Category) %>%
+      summarise(Value = sum(Value)) %>% 
+      pivot_wider(names_from = "Category", values_from = "Value") %>% 
       toJSON() %>% 
       return()
+  }
+
+  updateCharts <- reactive({
+    last_node <- input$last_node
+    if (is.null(input$last_node)) {
+      last_node <- "New Zealand"
+    }
+    node_title <- case_when(
+      last_node == "New Zealand" ~ "NZ",
+      last_node == "United Kingdom" ~ "UK",
+      last_node == "United States of America" ~ "USA",
+      TRUE ~ last_node
+    )
+
+    df <- va
+    titles <- c()
+    if (last_node %in% levels(df$NZ_port)) {
+      df <- df %>% filter(NZ_port == last_node)
+      nodeData <- df %>% 
+        mutate(Country_of_residence = Country_of_residence %>% 
+                 fct_recode("UK" = "United Kingdom",
+                            "USA" = "United States of America")) %>% 
+        selectOneDimension("Country_of_residence")
+      node_title <- paste("to", node_title)
+      titles <- c(titles, paste("Arrivals by country of residence", node_title))
+    } else if (last_node %in% levels(df$Country_of_residence)) {
+      df <- df %>% filter(Country_of_residence == last_node)
+      nodeData <- df %>% 
+        filter(NZ_port != "New Zealand") %>% 
+        selectOneDimension("NZ_port")
+      node_title <- paste("from", node_title)
+      titles <- c(titles, paste("Arrivals by NZ port", node_title))
+    } else {
+      stop("Invalid node passed to updateCharts")
+    }
+    purposeData <- df %>%
+      filter(Travel_purpose != "All purposes of travel") %>% 
+      selectOneDimension("Travel_purpose")
+    titles <- c(titles, paste("Arrivals by travel purpose", node_title))
+    lengthData <- df %>%
+      filter(Length_of_stay != "All lengths of stay") %>% 
+      selectOneDimension("Length_of_stay")
+    titles <- c(titles, paste("Arrivals by length of stay", node_title))
+    
+    return(list(Node = nodeData, Purpose = purposeData, Length = lengthData, Title = titles))
   })
 
   observe({
     session$sendCustomMessage("slider-range", sliderRange())
     session$sendCustomMessage("data", updateData())
     session$sendCustomMessage("scrollbar", updateScrollbarSeries())
+    session$sendCustomMessage("charts", updateCharts())
   })
 }
 

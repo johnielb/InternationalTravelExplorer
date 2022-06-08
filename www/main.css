@@ -1,6 +1,9 @@
 .container-fluid {
     height: 100%
 }
-.mapRow, #map {
+#map {
     height: 60vh;
+}
+#nodeChart, #purposeChart, #lengthChart {
+    height: 40vh;
 }

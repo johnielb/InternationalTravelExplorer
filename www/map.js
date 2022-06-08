@@ -39,6 +39,7 @@ $(document).on("shiny:connected", () => {
             if (data.Opacity === 0.5) {
               Shiny.setInputValue("port", data.Name);
             }
+            Shiny.setInputValue("last_node", data.Name);
         });
         let staticCircle = nodeTemplate.createChild(am4core.Circle);
         staticCircle.propertyFields.radius = "Radius";
@@ -174,6 +175,7 @@ $(document).on("shiny:connected", () => {
         // Put the other grip at the start and hide it
         slider.start = 0;
         slider.startGrip.hide();
+        slider.thumb.hide();
         slider.endGrip.events.on("drag", stop);
         // Keep the end grip as the sole button, and set its initial value and tell Shiny
         slider.end = 1;
@@ -206,6 +208,7 @@ $(document).on("shiny:connected", () => {
         let totalSeries = totalChart.series.push(new am4charts.LineSeries());
         totalSeries.dataFields.valueY = "Count";
         totalSeries.dataFields.dateX = "TimePeriod";
+        totalSeries.strokeWidth = 3;
         slider.series.push(totalSeries);
         Shiny.addCustomMessageHandler('scrollbar', (data) => {
           totalChart.data = data;
@@ -221,5 +224,64 @@ $(document).on("shiny:connected", () => {
         weekLabel.fill = am4core.color("#444444");
         weekLabel.fontSize = 16;
         weekLabel.marginLeft = 15;
+
+        // 6. Add line charts
+        function createLineChart(id) {
+            let chart = am4core.create(id, am4charts.XYChart);
+            chart.padding(0,0,0,0);
+            chart.numberFormatter = new am4core.NumberFormatter();
+            chart.numberFormatter.numberFormat = "#,###.#a";
+            // Set up title
+            let titleLabel = chart.titles.create();
+            titleLabel.text = "Arrivals";
+            titleLabel.align = "left";
+            titleLabel.fontSize = 16;
+            titleLabel.marginTop = 15;
+            titleLabel.marginBottom = 5;
+            // Set up axes
+            let x = chart.xAxes.push(new am4charts.DateAxis());
+            x.renderer.minGridDistance = 40;
+            x.renderer.labels.template.fontSize = 12;
+            x.dateFormats.setKey("week", "dd MMM yyyy")
+            let y = chart.yAxes.push(new am4charts.ValueAxis());
+            y.renderer.labels.template.fontSize = 12;
+            // Set up legend
+            chart.legend = new am4charts.Legend();
+            chart.legend.position = "top";
+            chart.legend.scrollable = true;
+            chart.legend.maxHeight = 50;
+            chart.legend.labels.template.fontSize = 12;
+            chart.legend.itemContainers.template.padding(0,0,0,0);
+            chart.legend.marginBottom = 5;
+            chart.cursor = new am4charts.XYCursor();
+            chart.cursor.xAxis = x;
+            chart.cursor.yAxis = y;
+            return chart;
+        }
+
+        function updateLineChart(chart, data, title) {
+            if (chart.data === undefined || chart.data.length === 0) {
+                for (let category of Object.keys(data[0]).filter(k => k !== "TimePeriod")) {
+                    let series = chart.series.push(new am4charts.LineSeries());
+                    series.name = category;
+                    series.dataFields.valueY = category;
+                    series.dataFields.dateX = "TimePeriod";
+                    series.strokeWidth = 2;
+                    series.connect = false;
+                }
+            }
+            chart.data = data;
+            chart.titles.getIndex(0).text = title;
+        }
+
+        let nodeChart = createLineChart("nodeChart");
+        let purposeChart = createLineChart("purposeChart");
+        let lengthChart = createLineChart("lengthChart");
+
+        Shiny.addCustomMessageHandler('charts', (data) => {
+            updateLineChart(nodeChart, data.Node, data.Title[0]);
+            updateLineChart(purposeChart, data.Purpose, data.Title[1]);
+            updateLineChart(lengthChart, data.Length, data.Title[2]);
+        });
     });
 });
