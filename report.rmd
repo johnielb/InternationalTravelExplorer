@@ -1,0 +1,54 @@
+---
+title: "International Travel Data Explorer"
+author: "Johniel Bocacao, 300490028"
+output: pdf_document
+---
+
+# 1. Introduction
+StatsNZ publishes the International Travel dataset monthly, which breaks down border movements entering or leaving New Zealand by a variety of dimensions. This dataset has traditionally been used by (among other use cases) the tourism industry to understand the potential international visitor market and its seasonality, and thus where to best expend efforts such as marketing, or to benchmark operators' historical performance based on the market available to them at the time.
+
+StatsNZ only visualises International Travel data as an overall time series, with no easy, accessible method for breaking down the time series by the different dimensions available in the dataset. Someone like a tourism operator would have to overcome the learning curve to extract meaningful insights from the spreadsheets StatsNZ publishes, or worse, StatsNZ's _Infoshare_.
+
+With this dataset, traditional charts like a line chart are not as effective due to the overlapping line series of similarly-sized international markets (see Figure 1 below). Traditional charts are also limited in their ability to convey mutliple dimensions of a measure. For example, the visualisation above has no ability to break down each country's volumes by purpose of travel.
+
+![An example line chart from MBIE's Sustainable Tourism Explorer.](img/figure1.png)
+
+A map visualisation is the perfect way to meaningfully present the data in these insights. Placing each country's volume on a geographic place on the map solves the problem of overlapping data. This also leverages our intuition of these dimensions. For example, China, Japan and Korea; and US and Canada, are grouped closer together. This method can also take advantage of the from-to mapping in this dataset, conveying the data as a network, with nodes as the origin country and destination port, and edges connecting nodes when visitors register in that particular cut of data.
+
+The need for this kind of visualisation has increased as COVID-19 public health measures sent the border into a state of flux, where policy changes can affect border flows in the order of weeks rather than months. With StatsNZ publishing provisional International Travel measures on a weekly basis, the data are available to make this a reality.
+
+# 2. Data
+StatsNZ has made provisional International Travel data available on a weekly basis since 2020. The provisional International Travel dataset is spread across three time series: weekly arrival data, daily arrivals and departures data, and stock estimates of travellers. I will focus on the first time series which contains the most useful information, particularly for tourism decision makers.
+
+This time series uses arrival card data, allowing us to separate NZ residents from overseas visitors, and break down by the purpose of travel (e.g. business, holiday). Other dimensions include their length of stay, the NZ port they arrived in, and their country of residence. One measure is available, the total movements of a particular traveller group. Because this uses arrival cards rather than administrative border data, there is a two-week delay as arrival cards are temporarily re-routed to the Ministry of Health first for public health management.
+
+Because StatsNZ only publishes the last 120 or so weeks of data, I will concatenate the publicly available data with an older version I’ve obtained.
+
+The map's network is represented as an edge list, as the dataset already acts like one (with a From = Country of residence, To = NZ port mapping). There are no attributes conveyed by the edges. There are several attributes associated with the nodes: its shape conveys whether it is an origin or destination node (circle and square respectively), its size represents the volume originating from that node (destination nodes have a constant size to keep all the different ports visible on a world map), and its latitude and longitude places it on the map. The last two attributes will be geocoded using Nominatim, a free query API, querying the node's name and adding the corresponding latitude and longitude features to said node.
+
+# 3. Application
+Functionality
+What the user can do
+What the app will display
+
+Design decisions
+- Network
+  - Subgraphs
+  - Edges
+  - Nodes
+- Input options
+- Slider
+- Line charts
+- Clickable nodes
+
+# 4. Insights
+What you learned
+Challenges
+
+- Data
+  - Lack of 2019 data, was essential to benchmark against pre-COVID volumes
+- Application
+  - Using a JavaScript library instead of R, communicating between 2
+- Future additions
+  - Change between different pIT datasets: border arrivals
+  - Potentially use flight schedule, pre-booking data to make an even more complex network
