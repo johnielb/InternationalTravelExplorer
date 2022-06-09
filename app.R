@@ -142,7 +142,8 @@ server <- function(input, output, session) {
              Value = Count) %>%
       group_by(TimePeriod, Category) %>%
       summarise(Value = sum(Value)) %>% 
-      pivot_wider(names_from = "Category", values_from = "Value") %>% 
+      mutate(Category = fct_drop(Category)) %>%
+      pivot_wider(names_from = "Category", values_from = "Value", values_fill = 0) %>% 
       toJSON() %>% 
       return()
   }
@@ -153,6 +154,7 @@ server <- function(input, output, session) {
       last_node <- "New Zealand"
     }
     node_title <- case_when(
+      grepl("airport", last_node) ~ str_replace(last_node, " airport", ""),
       last_node == "New Zealand" ~ "NZ",
       last_node == "United Kingdom" ~ "UK",
       last_node == "United States of America" ~ "USA",

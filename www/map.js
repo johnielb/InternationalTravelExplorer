@@ -68,7 +68,7 @@ $(document).on("shiny:connected", () => {
         Shiny.addCustomMessageHandler('data', (data) => {
             // Start assigning colours from scratch
             colorSet.reset();
-            // Deep clone data for node
+            // Deep clone data for nodes, act as a stack to clear
             let newNodeData = JSON.parse(JSON.stringify(data));
             // Get destination, assuming From-To edge data is in the first row
             let destination = newNodeData[0].To;
@@ -85,32 +85,8 @@ $(document).on("shiny:connected", () => {
                     node.Radius = 30 * Math.log(node.Count / 25000 + 1.3);
                 }
             });
-            // If data unassigned, assign
-            if (nodes.data === undefined) {
-                nodes.data = newNodeData;
-            } else {
-                // Add data in-place if data already defined
-                nodes.data.forEach(node => {
-                    let newNode = newNodeData.find(n => n.Name === node.Name);
-                    if (newNode === undefined) {
-                        // If not found, delete from nodes.data
-                        nodes.data.splice(nodes.data.indexOf(node), 1);
-                    } else {
-                        node.Count = newNode.Count;
-                        node.Radius = newNode.Radius;
-                        node.Opacity = newNode.Opacity;
-                        node.TimePeriod = newNode.TimePeriod;
-                        newNodeData.splice(newNodeData.indexOf(newNode), 1);
-                    }
-                });
-                // Add leftover new nodes
-                nodes.data.push(...newNodeData);
-                nodes.invalidateData();
-                nodes.deepInvalidate();
-            }
-            // Need this before the edges are constructed
+            nodes.data = newNodeData;
             nodes.validateData();
-            nodes.validate();
             weekLabel.text = nodes.data[0].TimePeriod;
 
             edges.mapLines.clear();
@@ -209,6 +185,7 @@ $(document).on("shiny:connected", () => {
         totalSeries.dataFields.valueY = "Count";
         totalSeries.dataFields.dateX = "TimePeriod";
         totalSeries.strokeWidth = 3;
+        totalSeries.connect = false;
         slider.series.push(totalSeries);
         Shiny.addCustomMessageHandler('scrollbar', (data) => {
           totalChart.data = data;
@@ -260,8 +237,8 @@ $(document).on("shiny:connected", () => {
         }
 
         function updateLineChart(chart, data, title) {
-            let keys = Object.keys(data[0]).filter(k => k !== "TimePeriod");
             if (chart.data === undefined || chart.data.length === 0 || chart.series.length === 0) {
+                let keys = Object.keys(data[0]).filter(k => k !== "TimePeriod");
                 for (let category of keys) {
                     let series = chart.series.push(new am4charts.LineSeries());
                     series.name = category;
@@ -280,7 +257,10 @@ $(document).on("shiny:connected", () => {
         let lengthChart = createLineChart("lengthChart");
 
         Shiny.addCustomMessageHandler('charts', (data) => {
-            if (data.Title[0].includes(" from ")) nodeChart.series.clear();
+            // If the nodes (sorted by R) don't match in the chart, clear and rebuild
+            let keys = Object.keys(data.Node[0]).filter(k => k !== "TimePeriod");
+            let firstNode = nodeChart.series.getIndex(0);
+            if (firstNode && firstNode.title !== keys[0]) nodeChart.series.clear();
 
             updateLineChart(nodeChart, data.Node, data.Title[0]);
             updateLineChart(purposeChart, data.Purpose, data.Title[1]);
