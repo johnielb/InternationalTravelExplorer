@@ -9,11 +9,11 @@ library(readr)
 
 ui <- fluidPage(
   tags$head(
-    tags$script(src = "http://www.amcharts.com/lib/4/core.js"),
-    tags$script(src = "http://www.amcharts.com/lib/4/charts.js"),
-    tags$script(src = "http://www.amcharts.com/lib/4/maps.js"),
-    tags$script(src = "http://www.amcharts.com/lib/4/themes/animated.js"),
-    tags$script(src = "http://www.amcharts.com/lib/4/geodata/worldLow.js"),
+    tags$script(src = "https://www.amcharts.com/lib/4/core.js"),
+    tags$script(src = "https://www.amcharts.com/lib/4/charts.js"),
+    tags$script(src = "https://www.amcharts.com/lib/4/maps.js"),
+    tags$script(src = "https://www.amcharts.com/lib/4/themes/animated.js"),
+    tags$script(src = "https://www.amcharts.com/lib/4/geodata/worldLow.js"),
     tags$link(rel = "stylesheet", type = "text/css", href = "main.css")
   ),
   tags$script(src = "map.js"),
@@ -169,33 +169,45 @@ server <- function(input, output, session) {
                             "USA" = "United States of America")) %>% 
         selectOneDimension("Country_of_residence")
       node_title <- paste("to", node_title)
-      titles <- c(titles, paste("Arrivals by country of residence", node_title))
+      titles <- c(titles, paste("Arrivals", node_title, "by country of residence"))
     } else if (last_node %in% levels(df$Country_of_residence)) {
       df <- df %>% filter(Country_of_residence == last_node)
       nodeData <- df %>% 
         filter(NZ_port != "New Zealand") %>% 
+        mutate(NZ_port = NZ_port %>% 
+                 fct_recode("Auckland" = "Auckland airport",
+                            "Christchurch" = "Christchurch airport",
+                            "Queenstown" = "Queenstown airport",
+                            "Wellington" = "Wellington airport")) %>% 
         selectOneDimension("NZ_port")
       node_title <- paste("from", node_title)
-      titles <- c(titles, paste("Arrivals by NZ port", node_title))
+      titles <- c(titles, paste("Arrivals", node_title, "by NZ port"))
     } else {
       stop("Invalid node passed to updateCharts")
     }
     purposeData <- df %>%
       filter(Travel_purpose != "All purposes of travel") %>% 
       selectOneDimension("Travel_purpose")
-    titles <- c(titles, paste("Arrivals by travel purpose", node_title))
+    titles <- c(titles, paste("Arrivals", node_title, "by travel purpose"))
     lengthData <- df %>%
       filter(Length_of_stay != "All lengths of stay") %>% 
       selectOneDimension("Length_of_stay")
-    titles <- c(titles, paste("Arrivals by length of stay", node_title))
+    titles <- c(titles, paste("Arrivals", node_title, "by length of stay"))
     
     return(list(Node = nodeData, Purpose = purposeData, Length = lengthData, Title = titles))
   })
 
+  # Handle events
   observe({
     session$sendCustomMessage("slider-range", sliderRange())
+  })
+  observe({
     session$sendCustomMessage("data", updateData())
+  })
+  observe({
     session$sendCustomMessage("scrollbar", updateScrollbarSeries())
+  })
+  observe({
     session$sendCustomMessage("charts", updateCharts())
   })
 }

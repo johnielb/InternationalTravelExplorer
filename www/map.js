@@ -260,8 +260,9 @@ $(document).on("shiny:connected", () => {
         }
 
         function updateLineChart(chart, data, title) {
-            if (chart.data === undefined || chart.data.length === 0) {
-                for (let category of Object.keys(data[0]).filter(k => k !== "TimePeriod")) {
+            let keys = Object.keys(data[0]).filter(k => k !== "TimePeriod");
+            if (chart.data === undefined || chart.data.length === 0 || chart.series.length === 0) {
+                for (let category of keys) {
                     let series = chart.series.push(new am4charts.LineSeries());
                     series.name = category;
                     series.dataFields.valueY = category;
@@ -279,6 +280,8 @@ $(document).on("shiny:connected", () => {
         let lengthChart = createLineChart("lengthChart");
 
         Shiny.addCustomMessageHandler('charts', (data) => {
+            if (data.Title[0].includes(" from ")) nodeChart.series.clear();
+
             updateLineChart(nodeChart, data.Node, data.Title[0]);
             updateLineChart(purposeChart, data.Purpose, data.Title[1]);
             updateLineChart(lengthChart, data.Length, data.Title[2]);
