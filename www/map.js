@@ -6,7 +6,7 @@ $(document).on("shiny:connected", () => {
         // 1. Create root map chart, centred on NZ ------------------------------------
         let mapChart = am4core.create("map", am4maps.MapChart);
         mapChart.geodata = am4geodata_worldLow;
-        mapChart.projection = new am4maps.projections.EqualEarth();
+        mapChart.projection = new am4maps.projections.Projection();
         mapChart.deltaLongitude = -160;
         // No dragging to move
         mapChart.panBehavior = "none";
