@@ -87,7 +87,8 @@ $(document).on("shiny:connected", () => {
             });
             nodes.data = newNodeData;
             nodes.validateData();
-            weekLabel.text = nodes.data[0].TimePeriod;
+            let timePeriod = nodes.data[0].TimePeriod;
+            weekLabel.text = timePeriod;
 
             edges.mapLines.clear();
             let nodeBullets = nodes.mapImages.values;
@@ -98,6 +99,11 @@ $(document).on("shiny:connected", () => {
                 let line = edges.mapLines.create();
                 // Link the two
                 line.imagesToConnect = [origin, dest];
+            });
+
+            charts.forEach(c => {
+                let x = c.xAxes.getIndex(0).axisRanges.getIndex(0);
+                x.date = new Date(timePeriod);
             });
         })
 
@@ -135,20 +141,14 @@ $(document).on("shiny:connected", () => {
         weekSliderContainer.layout = "vertical";
         weekSliderContainer.valign = "middle";
         weekSliderContainer.width = am4core.percent(100);
-
         weekSliderContainer.marginLeft = 20;
-
-        // Calculate what index to use based on slider value
-        function interpolateWeekFromValue(value) {
-            return 1 + Math.round(value * sliderRange);
-        }
 
         // Add week slider
         let slider = weekSliderContainer.createChild(am4charts.XYChartScrollbar);
         slider.orientation = "horizontal";
         slider.width = am4core.percent(100);
         slider.valign = "middle";
-        // Put the other grip at the start and hide it
+        // Put the other grip to the start and hide it
         slider.start = 0;
         slider.startGrip.hide();
         slider.thumb.hide();
@@ -158,7 +158,7 @@ $(document).on("shiny:connected", () => {
         Shiny.setInputValue("slider", slider.end);
         slider.events.on("rangechanged", (ev) => {
             // Pass a change in slider over to Shiny
-            Shiny.setInputValue("week_ended", interpolateWeekFromValue(ev.target.end));
+            Shiny.setInputValue("week_ended", 1 + Math.round(ev.target.end * sliderRange));
         });
         // Set slider range based on how many weeks in the data
         let sliderRange;
@@ -202,7 +202,7 @@ $(document).on("shiny:connected", () => {
         weekLabel.fontSize = 16;
         weekLabel.marginLeft = 15;
 
-        // 6. Add line charts
+        // 6. Add line charts -----------------------------------------
         function createLineChart(id) {
             let chart = am4core.create(id, am4charts.XYChart);
             chart.padding(0,0,0,0);
@@ -220,6 +220,10 @@ $(document).on("shiny:connected", () => {
             x.renderer.minGridDistance = 40;
             x.renderer.labels.template.fontSize = 12;
             x.dateFormats.setKey("week", "dd MMM yyyy")
+            let guide = x.axisRanges.create();
+            guide.grid.strokeWidth = 2;
+            guide.grid.strokeOpacity = 1;
+            guide.grid.stroke = am4core.color("#444");
             let y = chart.yAxes.push(new am4charts.ValueAxis());
             y.renderer.labels.template.fontSize = 12;
             // Set up legend
@@ -255,6 +259,7 @@ $(document).on("shiny:connected", () => {
         let nodeChart = createLineChart("nodeChart");
         let purposeChart = createLineChart("purposeChart");
         let lengthChart = createLineChart("lengthChart");
+        let charts = [nodeChart, purposeChart, lengthChart];
 
         Shiny.addCustomMessageHandler('charts', (data) => {
             // If the nodes (sorted by R) don't match in the chart, clear and rebuild

@@ -1,6 +1,8 @@
 library(shiny)
 library(jsonlite)
 library(dplyr)
+# Suppress summarise info
+options(dplyr.summarise.inform = FALSE)
 library(tidyr)
 library(forcats)
 library(stringr)
