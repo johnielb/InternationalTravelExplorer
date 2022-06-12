@@ -36,7 +36,7 @@ $(document).on("shiny:connected", () => {
         // Make clicking nodes dynamic
         nodeTemplate.events.on("hit", ev => {
             let data = ev.target.dataItem.dataContext;
-            if (data.Opacity === 0.5) {
+            if (data.From === undefined) {
               Shiny.setInputValue("port", data.Name);
             }
             Shiny.setInputValue("last_node", data.Name);
@@ -106,6 +106,7 @@ $(document).on("shiny:connected", () => {
                 x.date = new Date(timePeriod);
             });
         });
+        // When nodes have data updated, turn the destination nodes into squares
         nodes.events.on("datavalidated", ev => {
             ev.target.mapImages.values
                 .filter(i => i.dataItem.dataContext.From === undefined)
@@ -263,6 +264,7 @@ $(document).on("shiny:connected", () => {
 
         function updateLineChart(chart, data, title) {
             if (chart.data === undefined || chart.data.length === 0 || chart.series.length === 0) {
+                colorSet.reset();
                 let keys = Object.keys(data[0]).filter(k => k !== "TimePeriod");
                 for (let category of keys) {
                     let series = chart.series.push(new am4charts.LineSeries());

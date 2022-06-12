@@ -166,38 +166,53 @@ server <- function(input, output, session) {
       TRUE ~ last_node
     )
 
-    df <- va
+    node_arrivals <- va
     titles <- c()
-    if (last_node %in% levels(df$NZ_port)) {
-      df <- df %>% filter(NZ_port == last_node)
-      nodeData <- df %>% 
+    if (last_node %in% levels(node_arrivals$NZ_port)) {
+      node_arrivals <- node_arrivals %>% 
+        filter(NZ_port == last_node)
+      
+      nodeData <- node_arrivals %>% 
         mutate(Country_of_residence = Country_of_residence %>% 
                  fct_recode("UK" = "United Kingdom",
                             "USA" = "United States of America")) %>% 
+        filter(Travel_purpose == "All purposes of travel",
+               Length_of_stay == "All lengths of stay") %>% 
         selectOneDimension("Country_of_residence")
+      
       node_title <- paste("to", node_title)
       titles <- c(titles, paste("Arrivals", node_title, "by country of residence"))
-    } else if (last_node %in% levels(df$Country_of_residence)) {
-      df <- df %>% filter(Country_of_residence == last_node)
-      nodeData <- df %>% 
-        filter(NZ_port != "New Zealand") %>% 
+    } else if (last_node %in% levels(node_arrivals$Country_of_residence)) {
+      node_arrivals <- node_arrivals %>% 
+        filter(Country_of_residence == last_node)
+      
+      nodeData <- node_arrivals %>% 
+        filter(NZ_port != "New Zealand",
+               Travel_purpose == "All purposes of travel",
+               Length_of_stay == "All lengths of stay") %>% 
         mutate(NZ_port = NZ_port %>% 
                  fct_recode("Auckland" = "Auckland airport",
                             "Christchurch" = "Christchurch airport",
                             "Queenstown" = "Queenstown airport",
                             "Wellington" = "Wellington airport")) %>% 
         selectOneDimension("NZ_port")
+      
       node_title <- paste("from", node_title)
       titles <- c(titles, paste("Arrivals", node_title, "by NZ port"))
+      
+      node_arrivals <- node_arrivals %>% 
+        filter(NZ_port == "New Zealand")
     } else {
       stop("Invalid node passed to updateCharts")
     }
-    purposeData <- df %>%
-      filter(Travel_purpose != "All purposes of travel") %>% 
+    purposeData <- node_arrivals %>%
+      filter(Travel_purpose != "All purposes of travel",
+             Length_of_stay == "All lengths of stay") %>% 
       selectOneDimension("Travel_purpose")
     titles <- c(titles, paste("Arrivals", node_title, "by travel purpose"))
-    lengthData <- df %>%
-      filter(Length_of_stay != "All lengths of stay") %>% 
+    lengthData <- node_arrivals %>%
+      filter(Travel_purpose == "All purposes of travel",
+             Length_of_stay != "All lengths of stay") %>% 
       selectOneDimension("Length_of_stay")
     titles <- c(titles, paste("Arrivals", node_title, "by length of stay"))
     

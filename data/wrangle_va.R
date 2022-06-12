@@ -11,39 +11,6 @@ library(stringr)
 library(lubridate)
 library(readr)
 
-sum_and_complete_category <- function(df) {
-  df %>%
-    group_by(TimePeriod, Category) %>%
-    arrange(TimePeriod, Category) %>%
-    summarise(Value = sum(Value)) %>%
-    ungroup() %>%
-    mutate(Category = fct_drop(Category)) %>% # drop unused categories before filling in below
-    complete(TimePeriod, Category, fill=list(Value = 0))
-}
-
-# calculate_daily_growth_vs_2019 <- function(df) {
-#   n_categories <- length(unique(df$Category))
-#
-#   df_2019 <- df %>%
-#     head(365*n_categories) %>%
-#     mutate(Month = month(TimePeriod),
-#            Day = day(TimePeriod))
-#
-#   df %>%
-#     tail(-365*n_categories) %>%
-#     mutate(Month = month(TimePeriod),
-#            Day = day(TimePeriod)) %>%
-#     right_join(df_2019, by=c("Category", "Month", "Day"), suffix=c("_Final","_Init")) %>%
-#     mutate(Growth = (Value_Final/Value_Init-1)*100) %>%
-#     select(TimePeriod = TimePeriod_Final, Category, Value = Growth)
-# }
-
-# write_utf8 <- function(string, filename) {
-#   con <- file(filename, "wb")
-#   writeBin(charToRaw(string), con, endian="little")
-#   close(con)
-# }
-
 # 2. Load in visitor arrival (VA) data ======================================
 va_raw <- read_csv(paste0("data/VisitorArrivals.csv"),
                     col_types = cols_only(Week_ended = col_date(format="%Y-%m-%d"),
@@ -98,36 +65,7 @@ va <- va_raw %>%
            fct_drop() %>% 
            fct_relevel(sort)
          ) %>%
-  arrange(Travel_purpose, Week_ended, Country_of_residence, NZ_port)
-
-#
-# va_nested <- va %>%
-#   select(TimePeriod = Week_ended, From = Country_of_residence, To = NZ_port,
-#          Purpose = Travel_purpose, Length = Length_of_stay, Value = Count) %>%
-#   group_by(Purpose, Length, TimePeriod, From, To) %>%
-#   summarise(Value = sum(Value)) %>%
-#   group_by(Purpose, Length, TimePeriod) %>%
-#   nest() %>%
-#   group_by(Purpose, Length) %>%
-#   nest()  %>%
-#   pivot_wider(names_from = "Length", values_from = "") %>%
-#   group_by(Purpose) %>%
-#   nest()  %>%
-#   pivot_wider(names_from = "Purpose", values_from = "")
-#
-# save(va_nested, file= "va_nested.Rda")
-#
-# out <- va_nested %>%
-#   jsonlite::toJSON() %>%
-#   toString() %>%
-#   str_replace_all('\\[\\{\\"(?!(From)|Time)', '{"') %>%
-#   str_replace_all('\\}\\]\\}\\]\\}\\]\\}\\]', "}]}]}}") %>%
-#   str_replace_all('\\}\\]\\}\\]\\}\\]', "}]}]}") %>%
-#   # str_replace_all('\\}\\]\\}\\]', "}]}") %>%
-#   str_replace_all('\\{\\}\\}\\]\\}\\]', "{}}]}")
-#
-# stopifnot(validate(out))
-#
-# out %>%
-#   write_utf8("allData.json")
-#
+  arrange(Week_ended, Country_of_residence, NZ_port, Travel_purpose, Length_of_stay) %>% 
+  group_by(Week_ended, Country_of_residence, NZ_port, Travel_purpose, Length_of_stay) %>% 
+  summarise(Count = sum(Count)) %>% 
+  ungroup()

@@ -27,6 +27,16 @@ Because StatsNZ only publishes the last 120 or so weeks of data, I will concaten
 The map's network is represented as an edge list, as the dataset already acts like one (with a From = Country of residence, To = NZ port mapping). There are no attributes conveyed by the edges. There are several attributes associated with the nodes: its shape conveys whether it is an origin or destination node (circle and square respectively), its size represents the volume originating from that node (destination nodes have a constant size to keep all the different ports visible on a world map), and its latitude and longitude places it on the map. The last two attributes will be geocoded using Nominatim, a free query API, querying the node's name and adding the corresponding latitude and longitude features to said node.
 
 # 3. Application
+The main feature of the Explorer is the map, which is centred on New Zealand to emphasise its centrality in the network, which is limited to looking at arrivals to New Zealand. The network is visualised with nodes represented as circles (origin nodes or countries of residence) or squares (destination nodes or NZ ports). The former is sized proportional to the number of visitors arriving from that particular country to the currently selected port. Nodes are connected by edges that do not convey any information, and all have edges connecting to the same (currently selected) port.
+
+Two options were investigated when sizing the node. Initially, the 
+
+In the map, the user can interact with the network by hovering over the nodes to see the exact number of visitor arrivals from or to that node. The user can click on the node to change what data is being visualised. Clicking on any node changes the line charts below the map, filtering out figures for that particular node. For example, clicking on Australia allows the user to break down visitor arrivals from Australia by NZ port, travel purpose and length of stay. Clicking on a NZ port like Queenstown, for example, breaks down visitor arrivals to Queenstown by country of residence in the first chart. Additionally, clicking on a NZ port changes the subnetwork being shown, only showing edges connecting to the currently selected port.
+
+The user can use the slider to adjust the week of data being visualised, which has data from April 2019 to the latest data (22 May 2022 at the time of writing). A line graph can be seen in the background of this slider to give a rough indication of the relative volume of the selected time period compared to the rest of the time series. Moving around the slider also moves a guide on all three line charts to aid the user in understanding where the current time period is in the time series.
+
+The 
+
 Functionality
 What the user can do
 What the app will display
@@ -47,6 +57,7 @@ Challenges
 
 - Data
   - Lack of 2019 data, was essential to benchmark against pre-COVID volumes
+  - StatsNZ stupid totalling
 - Application
   - Using a JavaScript library instead of R, communicating between 2
 - Future additions
