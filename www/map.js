@@ -34,7 +34,7 @@ $(document).on("shiny:connected", () => {
         nodeTemplate.propertyFields.opacity = "Opacity";
         nodeTemplate.tooltipText = "{title}: {value} arrivals";
         // Make clicking nodes dynamic
-        nodeTemplate.events.on("hit", (ev) => {
+        nodeTemplate.events.on("hit", ev => {
             let data = ev.target.dataItem.dataContext;
             if (data.Opacity === 0.5) {
               Shiny.setInputValue("port", data.Name);
@@ -105,7 +105,21 @@ $(document).on("shiny:connected", () => {
                 let x = c.xAxes.getIndex(0).axisRanges.getIndex(0);
                 x.date = new Date(timePeriod);
             });
-        })
+        });
+        nodes.events.on("datavalidated", ev => {
+            ev.target.mapImages.values
+                .filter(i => i.dataItem.dataContext.From === undefined)
+                .forEach(i => {
+                    i.children.clear();
+                    let square = i.createChild(am4core.Rectangle);
+                    let data = i.dataItem.dataContext;
+                    square.width = data.Radius*2;
+                    square.height = data.Radius*2;
+                    square.fill = data.Color;
+                    square.horizontalCenter = "middle";
+                    square.verticalCenter = "middle";
+                });
+        });
 
         // 5. Set up slider ------------------------------------
 
@@ -119,8 +133,8 @@ $(document).on("shiny:connected", () => {
         // Add play button for slider
         let playButton = bottomContainer.createChild(am4core.PlayButton);
         playButton.valign = "middle";
-        playButton.events.on("toggled", function (event) {
-            if (event.target.isActive) {
+        playButton.events.on("toggled", ev => {
+            if (ev.target.isActive) {
                 if (slider) {
                     if (slider.end >= 1) {
                         slider.end = 0;
@@ -156,7 +170,7 @@ $(document).on("shiny:connected", () => {
         // Keep the end grip as the sole button, and set its initial value and tell Shiny
         slider.end = 1;
         Shiny.setInputValue("slider", slider.end);
-        slider.events.on("rangechanged", (ev) => {
+        slider.events.on("rangechanged", ev => {
             // Pass a change in slider over to Shiny
             Shiny.setInputValue("week_ended", 1 + Math.round(ev.target.end * sliderRange));
         });
