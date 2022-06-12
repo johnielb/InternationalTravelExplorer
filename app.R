@@ -50,6 +50,9 @@ ui <- fluidPage(
     mainPanel(
       width = 9,
       fluidRow(
+      	textOutput("header")
+      ),
+      fluidRow(
         id = "mapRow",
         column(12, tags$div(id = "map"))
       ),
@@ -213,6 +216,15 @@ server <- function(input, output, session) {
   })
   observe({
     session$sendCustomMessage("charts", updateCharts())
+  })
+  output$header <- renderText({
+    last_node <- input$last_node
+    if (is.null(input$last_node)) {
+      last_node <- "New Zealand"
+    }
+  	paste("Visitor arrivals ✈️", 
+  	      ifelse(last_node %in% levels(va$NZ_port), "to", "from"), 
+  	      last_node)
   })
 }
 

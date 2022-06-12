@@ -1,9 +1,16 @@
 .container-fluid {
     height: 100%
 }
+#header {
+    height: 24px;
+    font-size: 24px;
+    color: #000;
+    text-align: center;
+    transform: translate(0px, 12px);
+}
 #map {
     height: 60vh;
 }
 #nodeChart, #purposeChart, #lengthChart {
-    height: 40vh;
+    height: calc(40vh - 24px);
 }

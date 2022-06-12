@@ -77,8 +77,8 @@ $(document).on("shiny:connected", () => {
                 node.Color = colorSet.next();
                 node.Opacity = 1;
                 if (node.From === undefined) {
-                    node.Name = node.To
-                    node.Radius = 5
+                    node.Name = node.To;
+                    node.Radius = 6;
                     if (node.Name !== destination) node.Opacity = 0.5;
                 } else {
                     node.Name = node.From
@@ -166,6 +166,7 @@ $(document).on("shiny:connected", () => {
         slider.start = 0;
         slider.startGrip.hide();
         slider.thumb.hide();
+        slider.thumb.events.disable();
         slider.endGrip.events.on("drag", stop);
         // Keep the end grip as the sole button, and set its initial value and tell Shiny
         slider.end = 1;
@@ -222,6 +223,7 @@ $(document).on("shiny:connected", () => {
             chart.padding(0,0,0,0);
             chart.numberFormatter = new am4core.NumberFormatter();
             chart.numberFormatter.numberFormat = "#,###.#a";
+
             // Set up title
             let titleLabel = chart.titles.create();
             titleLabel.text = "Arrivals";
@@ -229,6 +231,7 @@ $(document).on("shiny:connected", () => {
             titleLabel.fontSize = 16;
             titleLabel.marginTop = 15;
             titleLabel.marginBottom = 5;
+
             // Set up axes
             let x = chart.xAxes.push(new am4charts.DateAxis());
             x.renderer.minGridDistance = 40;
@@ -237,9 +240,10 @@ $(document).on("shiny:connected", () => {
             let guide = x.axisRanges.create();
             guide.grid.strokeWidth = 2;
             guide.grid.strokeOpacity = 1;
-            guide.grid.stroke = am4core.color("#444");
+            guide.grid.stroke = am4core.color("#777");
             let y = chart.yAxes.push(new am4charts.ValueAxis());
             y.renderer.labels.template.fontSize = 12;
+
             // Set up legend
             chart.legend = new am4charts.Legend();
             chart.legend.position = "top";
@@ -248,9 +252,12 @@ $(document).on("shiny:connected", () => {
             chart.legend.labels.template.fontSize = 12;
             chart.legend.itemContainers.template.padding(0,0,0,0);
             chart.legend.marginBottom = 5;
+
+            // Set up cursor
             chart.cursor = new am4charts.XYCursor();
             chart.cursor.xAxis = x;
             chart.cursor.yAxis = y;
+            chart.cursor.maxTooltipDistance = 30;
             return chart;
         }
 
@@ -262,6 +269,7 @@ $(document).on("shiny:connected", () => {
                     series.name = category;
                     series.dataFields.valueY = category;
                     series.dataFields.dateX = "TimePeriod";
+                    series.tooltipText = "{name}: {valueY}"
                     series.strokeWidth = 2;
                     series.connect = false;
                 }
