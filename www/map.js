@@ -82,7 +82,7 @@ $(document).on("shiny:connected", () => {
                     if (node.Name !== destination) node.Opacity = 0.5;
                 } else {
                     node.Name = node.From
-                    node.Radius = 30 * Math.log(node.Count / 25000 + 1.3);
+                    node.Radius = 30 * Math.log(node.Count / 25000 + 1.15);
                 }
             });
             nodes.data = newNodeData;
@@ -171,7 +171,7 @@ $(document).on("shiny:connected", () => {
         slider.endGrip.events.on("drag", stop);
         // Keep the end grip as the sole button, and set its initial value and tell Shiny
         slider.end = 1;
-        Shiny.setInputValue("slider", slider.end);
+        // Shiny.setInputValue("slider", slider.end);
         slider.events.on("rangechanged", ev => {
             // Pass a change in slider over to Shiny
             Shiny.setInputValue("week_ended", 1 + Math.round(ev.target.end * sliderRange));
@@ -238,6 +238,7 @@ $(document).on("shiny:connected", () => {
             x.renderer.minGridDistance = 40;
             x.renderer.labels.template.fontSize = 12;
             x.dateFormats.setKey("week", "dd MMM yyyy")
+            x.dateFormatter.firstDayOfWeek = 0;  
             let guide = x.axisRanges.create();
             guide.grid.strokeWidth = 2;
             guide.grid.strokeOpacity = 1;
@@ -264,7 +265,7 @@ $(document).on("shiny:connected", () => {
 
         function updateLineChart(chart, data, title) {
             if (chart.data === undefined || chart.data.length === 0 || chart.series.length === 0) {
-                colorSet.reset();
+                chart.colors.reset();
                 let keys = Object.keys(data[0]).filter(k => k !== "TimePeriod");
                 for (let category of keys) {
                     let series = chart.series.push(new am4charts.LineSeries());

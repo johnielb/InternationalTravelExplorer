@@ -90,14 +90,15 @@ server <- function(input, output, session) {
     range <- unique(va$Week_ended)
     return(range[index])
   })
-
+  # React to changes to the radio button inputs once, all data except for the 
+  # data for the line charts should come through here.
   filteredVAData <- reactive({
     va %>%
       filter(Length_of_stay == input$lengths, Travel_purpose == input$purposes) %>%
       return()
   })
-
-  updateData <- reactive({
+  # Wrangle network data as an edge list
+  updateMapData <- reactive({
     week_ended <- getWeek()
     nz_port <- input$port
     if (is.null(input$port)) {
@@ -123,7 +124,7 @@ server <- function(input, output, session) {
       toJSON() %>%
       return()
   })
-
+  # Update the line series shown behind the slider
   updateScrollbarSeries <- reactive({
     nz_port <- input$port
     if (is.null(input$port)) {
@@ -139,8 +140,8 @@ server <- function(input, output, session) {
       toJSON() %>%
       return()
   })
-  
-  selectOneDimension <- function(df, category) {
+  # Helper for wrangling the line chart data, selecting one particular category
+  selectOneCategory <- function(df, category) {
     df %>% 
       select(TimePeriod = Week_ended,
              Category = category,
@@ -152,7 +153,7 @@ server <- function(input, output, session) {
       toJSON() %>% 
       return()
   }
-
+  # Update all 3 line charts
   updateCharts <- reactive({
     last_node <- input$last_node
     if (is.null(input$last_node)) {
@@ -178,7 +179,7 @@ server <- function(input, output, session) {
                             "USA" = "United States of America")) %>% 
         filter(Travel_purpose == "All purposes of travel",
                Length_of_stay == "All lengths of stay") %>% 
-        selectOneDimension("Country_of_residence")
+        selectOneCategory("Country_of_residence")
       
       node_title <- paste("to", node_title)
       titles <- c(titles, paste("Arrivals", node_title, "by country of residence"))
@@ -195,7 +196,7 @@ server <- function(input, output, session) {
                             "Christchurch" = "Christchurch airport",
                             "Queenstown" = "Queenstown airport",
                             "Wellington" = "Wellington airport")) %>% 
-        selectOneDimension("NZ_port")
+        selectOneCategory("NZ_port")
       
       node_title <- paste("from", node_title)
       titles <- c(titles, paste("Arrivals", node_title, "by NZ port"))
@@ -205,15 +206,17 @@ server <- function(input, output, session) {
     } else {
       stop("Invalid node passed to updateCharts")
     }
+    
     purposeData <- node_arrivals %>%
       filter(Travel_purpose != "All purposes of travel",
              Length_of_stay == "All lengths of stay") %>% 
-      selectOneDimension("Travel_purpose")
+      selectOneCategory("Travel_purpose")
     titles <- c(titles, paste("Arrivals", node_title, "by travel purpose"))
+    
     lengthData <- node_arrivals %>%
       filter(Travel_purpose == "All purposes of travel",
              Length_of_stay != "All lengths of stay") %>% 
-      selectOneDimension("Length_of_stay")
+      selectOneCategory("Length_of_stay")
     titles <- c(titles, paste("Arrivals", node_title, "by length of stay"))
     
     return(list(Node = nodeData, Purpose = purposeData, Length = lengthData, Title = titles))
@@ -224,7 +227,7 @@ server <- function(input, output, session) {
     session$sendCustomMessage("slider-range", sliderRange())
   })
   observe({
-    session$sendCustomMessage("data", updateData())
+    session$sendCustomMessage("data", updateMapData())
   })
   observe({
     session$sendCustomMessage("scrollbar", updateScrollbarSeries())
