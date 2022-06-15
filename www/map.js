@@ -1,7 +1,23 @@
 $(document).on("shiny:connected", () => {
     am4core.useTheme(am4themes_animated);
+    am4core.useTheme(am4themes_amchartsdark);
     am4core.ready(() =>{
         let colorSet = new am4core.ColorSet();
+        colorSet.list = [
+            am4core.color("#7ba7e0"),
+            am4core.color("#6b63d3"),
+            am4core.color("#eb6eb0"),
+            am4core.color("#ffa600"),
+            am4core.color("#7fdade"),
+            am4core.color("#b6b6d9"),
+            am4core.color("#ff6c6e"),
+            am4core.color("#8470d3"),
+            am4core.color("#fbb8c9"),
+            am4core.color("#ff8643"),
+            am4core.color("#b775b6"),
+            am4core.color("#8d8fd9"),
+            am4core.color("#833ca9")
+        ];
 
         // 1. Create root map chart, centred on NZ ------------------------------------
         let mapChart = am4core.create("map", am4maps.MapChart);
@@ -17,13 +33,21 @@ $(document).on("shiny:connected", () => {
         let polygons = mapChart.series.push(new am4maps.MapPolygonSeries());
         polygons.useGeodata = true;
         polygons.exclude = ["AQ"];
+        let polyTemplate = polygons.mapPolygons.template;
+        polyTemplate.fill = am4core.color("#87b3e1");
+        polyTemplate.strokeOpacity = 0;
+        polyTemplate.strokeWidth = 1.5;
+        polyTemplate.fillOpacity = 0.5;
+        // Hover over country
+        let hs = polyTemplate.states.create("hover");
+        hs.properties.fill = am4core.color("#519ae8");
 
         // 3. Create edge and node templates ------------------------------------
         let edges = mapChart.series.push(new am4maps.MapArcSeries());
         edges.mapLines.template.line.controlPointDistance = 0.1;
         edges.mapLines.template.line.controlPointPosition = 0.5;
         edges.mapLines.template.line.strokeWidth = 6;
-        edges.mapLines.template.line.stroke = "#777";
+        edges.mapLines.template.line.stroke = "#ccc";
         let nodes = mapChart.series.push(new am4maps.MapImageSeries());
         let nodeTemplate = nodes.mapImages.template;
         nodeTemplate.propertyFields.latitude = "Latitude";
@@ -32,6 +56,7 @@ $(document).on("shiny:connected", () => {
         nodeTemplate.propertyFields.value = "Count";
         nodeTemplate.propertyFields.radius = "Radius";
         nodeTemplate.propertyFields.opacity = "Opacity";
+        nodeTemplate.propertyFields.fill = "Color";
         nodeTemplate.tooltipText = "{title}: {value} arrivals";
         // Make clicking nodes dynamic
         nodeTemplate.events.on("hit", ev => {
@@ -45,24 +70,6 @@ $(document).on("shiny:connected", () => {
         staticCircle.propertyFields.radius = "Radius";
         staticCircle.propertyFields.fill = "Color";
         staticCircle.nonScaling = true;
-        // let circle = nodeTemplate.createChild(am4core.Circle);
-        // circle.radius = 5;
-        // circle.propertyFields.fill = "Color";
-        // circle.events.on("inited", ev => animateBullet(ev.target));
-        // let animateBullet = bullet => {
-        //     let animation = bullet.animate([
-        //         {
-        //             property: "scale",
-        //             from: 1,
-        //             to: 3
-        //         }, {
-        //             property: "opacity",
-        //             from: 1,
-        //             to: 0
-        //         }
-        //     ], 1500, am4core.ease.circleOut);
-        //     animation.events.on("animationended", ev => animateBullet(ev.target.object));
-        // };
 
         // 4. Promise the nodes and edges data from Shiny
         Shiny.addCustomMessageHandler('data', (data) => {
@@ -82,7 +89,7 @@ $(document).on("shiny:connected", () => {
                     if (node.Name !== destination) node.Opacity = 0.5;
                 } else {
                     node.Name = node.From
-                    node.Radius = 30 * Math.log(node.Count / 25000 + 1.15);
+                    node.Radius = 30 * Math.log(node.Count / 25000 + 1.1);
                 }
             });
             nodes.data = newNodeData;
@@ -176,6 +183,10 @@ $(document).on("shiny:connected", () => {
             // Pass a change in slider over to Shiny
             Shiny.setInputValue("week_ended", 1 + Math.round(ev.target.end * sliderRange));
         });
+        // Change slider unselected background
+        slider.unselectedOverlay.fill = am4core.color("#003462");
+        slider.unselectedOverlay.fillOpacity = 0.5;
+
         // Set slider range based on how many weeks in the data
         let sliderRange;
         Shiny.addCustomMessageHandler("slider-range", (range) => {
@@ -214,7 +225,6 @@ $(document).on("shiny:connected", () => {
         // Add week label to the right
         let weekLabel = bottomContainer.createChild(am4core.Label);
         weekLabel.valign = "middle";
-        weekLabel.fill = am4core.color("#444444");
         weekLabel.fontSize = 16;
         weekLabel.marginLeft = 15;
 
@@ -224,6 +234,7 @@ $(document).on("shiny:connected", () => {
             chart.padding(0,0,0,0);
             chart.numberFormatter = new am4core.NumberFormatter();
             chart.numberFormatter.numberFormat = "#,###.#a";
+            chart.colors.list = colorSet.list;
 
             // Set up title
             let titleLabel = chart.titles.create();
@@ -242,7 +253,7 @@ $(document).on("shiny:connected", () => {
             let guide = x.axisRanges.create();
             guide.grid.strokeWidth = 2;
             guide.grid.strokeOpacity = 1;
-            guide.grid.stroke = am4core.color("#777");
+            guide.grid.stroke = am4core.color("#ccc");
             let y = chart.yAxes.push(new am4charts.ValueAxis());
             y.renderer.labels.template.fontSize = 12;
 

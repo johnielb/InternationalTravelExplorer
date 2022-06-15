@@ -15,6 +15,7 @@ ui <- fluidPage(
     tags$script(src = "https://www.amcharts.com/lib/4/charts.js"),
     tags$script(src = "https://www.amcharts.com/lib/4/maps.js"),
     tags$script(src = "https://www.amcharts.com/lib/4/themes/animated.js"),
+    tags$script(src = "https://www.amcharts.com/lib/4/themes/amchartsdark.js"),
     tags$script(src = "https://www.amcharts.com/lib/4/geodata/worldLow.js"),
     tags$link(rel = "stylesheet", type = "text/css", href = "main.css")
   ),
@@ -23,6 +24,7 @@ ui <- fluidPage(
     sidebarPanel(
       width = 3,
       h1("International Travel Data Explorer"),
+      hr(),
       radioButtons(
         "purposes",
         "Filter by purpose of travel",
@@ -34,6 +36,7 @@ ui <- fluidPage(
           "Other"
         )
       ),
+      hr(),
       radioButtons(
         "lengths",
         "Filter by length of stay",

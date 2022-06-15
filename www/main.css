@@ -1,16 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@200;400;600&display=swap');
+
+body {
+  background: linear-gradient(#021b31, #2e79c0);
+  font-family: "Work Sans", -apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-weight: 200;
+}
+
 .container-fluid {
     height: 100%
 }
+
 #header {
     height: 24px;
     font-size: 24px;
-    color: #000;
+    color: #9bc1e0;
     text-align: center;
     transform: translate(0px, 12px);
+    letter-spacing: 0.5px;
 }
 #map {
     height: 60vh;
+    font-weight: 400;
 }
 #nodeChart, #purposeChart, #lengthChart {
     height: calc(40vh - 24px);
+    font-weight: 400;
+}
+
+.well {
+    background-color: rgba(255, 255, 255, 0);
+    border: 0;
+    color: #9bc1e0;
+    font-size: 18px;
+}
+
+h1 {
+    font-size: 48px;
+    font-weight: 200;
+}
+
+hr {
+    border-top-color: #9bc1e0;
+    border-top-width: 0.5px;
 }
